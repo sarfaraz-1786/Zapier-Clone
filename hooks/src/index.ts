@@ -1,34 +1,36 @@
-import express from 'express'
-import { PrismaClient } from '@prisma/client';
+import express from "express"
+import {PrismaClient } from "@prisma/client";
+
+const client = new PrismaClient();
 
 const app = express();
-const client = new PrismaClient();
-app.use(express.json())
+app.use(express.json());
 
-app.post("/hooks/catch/:userId/:zapId",async(req,res) =>{
+// https://hooks.zapier.com/hooks/catch/17043103/22b8496/
+// password logic
+app.post("/hooks/catch/:userId/:zapId", async (req, res) => {
     const userId = req.params.userId;
-    const zapid =  req.params.zapId;
-    const body = req.body
+    const zapId = req.params.zapId;
+    const body = req.body;
 
-    await  client.$transaction(async(tx)=>{
-
+    // store in db a new trigger
+    await client.$transaction(async tx => {
         const run = await tx.zapRun.create({
-            data:{
-                zapId:zapid,
-                metadata:body
+            data: {
+                zapId: zapId,
+                metadata: body
             }
-        })
+        });;
 
         await tx.zapRunOutbox.create({
-            data:{
-                zapRunId:run.id
+            data: {
+                zapRunId: run.id
             }
         })
     })
-    
     res.json({
-        message:'webhook received'
+        message: "Webhook received"
     })
 })
 
-app.listen(3000);
+app.listen(3002);
